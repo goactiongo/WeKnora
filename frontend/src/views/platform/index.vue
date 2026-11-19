@@ -1,6 +1,6 @@
 <template>
     <div class="main" ref="dropzone" :style="{ '--sidebar-width': `${uiStore.sidebarDisplayWidth}px` }">
-        <Menu></Menu>
+        <Menu v-if="!isCubeKnowledgePage"></Menu>
         <div v-if="isRouterAlive" class="platform-route-outlet">
             <RouterView />
         </div>
@@ -19,12 +19,13 @@
         <!-- 知识库文件上传进度浮层：上传队列放在 store 里，切换页面不中断 -->
         <UploadTasksPanel />
         <!-- 带遮罩层的新手引导：首次进入自动开启，可从用户菜单顶部昵称旁帮助按钮重新打开 -->
-        <NewUserGuide />
+        <!-- Cube 独立详情页不弹欢迎/新手引导 -->
+        <NewUserGuide v-if="!isCubeKnowledgePage" />
     </div>
 </template>
 <script setup lang="ts">
 import Menu from '@/components/menu.vue'
-import { ref, onMounted, onUnmounted, nextTick, provide, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, provide, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import UploadMask from '@/components/upload-mask.vue'
 import Settings from '@/views/settings/Settings.vue'
@@ -48,6 +49,9 @@ const commandPaletteStore = useCommandPaletteStore();
 const uiStore = useUIStore();
 let ismask = ref(false)
 const { t } = useI18n();
+
+// Cube 二开：独立知识库详情页隐藏左侧导航与新手引导（欢迎页）
+const isCubeKnowledgePage = computed(() => route.name === 'cubeKnowledgeBaseDetail');
 
 const isRouterAlive = ref(true)
 const reloadApp = () => {

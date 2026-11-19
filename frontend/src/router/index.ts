@@ -122,6 +122,13 @@ const router = createRouter({
           meta: { requiresInit: true, requiresAuth: true }
         },
         {
+          // Cube 二开：独立知识库详情页（无侧栏/面包屑/画廊/设置，默认图谱 tab）
+          path: "cube-knowledge-bases/:kbId",
+          name: "cubeKnowledgeBaseDetail",
+          component: () => import("../views/knowledge/KnowledgeBase.vue"),
+          meta: { requiresInit: true, requiresAuth: true }
+        },
+        {
           path: "knowledge-search",
           // 旧路径保留为重定向，打开全局命令面板（⌘K），带上可选的 q 参数
           redirect: (to) => {

@@ -90,6 +90,8 @@ import { useAssistantPageContext } from '@/composables/useAssistantPageContext';
 import type { ParserEngineInfo } from '@/api/system';
 const route = useRoute();
 const { t } = useI18n();
+// Cube 二开：独立详情页（/platform/cube-knowledge-bases/:kbId）
+const isCubePage = computed(() => route.name === 'cubeKnowledgeBaseDetail');
 const kbId = computed(() => (route.params as any).kbId as string || '');
 const kbInfo = ref<any>(null);
 const uploadSourceRef = ref<InstanceType<typeof KbUploadSourceDropdown> | null>(null);
@@ -99,8 +101,20 @@ const isFAQ = computed(() => (kbInfo.value?.type || '') === 'faq');
 const isWiki = computed(() => !!kbInfo.value?.indexing_strategy?.wiki_enabled);
 const validTabs = ['documents', 'wiki', 'graph', 'gallery'] as const
 type KbTab = typeof validTabs[number]
-const initTab = validTabs.includes(route.query.tab as any) ? (route.query.tab as KbTab) : 'documents'
+// Cube 二开：独立详情页默认进入图谱 tab；显式 ?tab= 仍可覆盖（gallery 除外，避免隐藏页签导致白屏）
+const initTabRaw = validTabs.includes(route.query.tab as any)
+  ? (route.query.tab as KbTab)
+  : (isCubePage.value ? 'graph' : 'documents')
+const initTab: KbTab = isCubePage.value && initTabRaw === 'gallery' ? 'graph' : initTabRaw
 const activeKbTab = ref<KbTab>(initTab);
+
+// Cube 二开：同一 SPA 内从原详情页切到 cube 页时组件会被复用，initTab 不会重算；
+// 这里确保进入 cube 页时落到图谱（若已显式选择 wiki/graph 则保留）
+watch(isCubePage, (val) => {
+  if (val && activeKbTab.value !== 'wiki' && activeKbTab.value !== 'graph') {
+    activeKbTab.value = 'graph'
+  }
+});
 
 // Wiki 状态用于面包屑上的索引中指示。父组件自行拉取，避免依赖 WikiBrowser 挂载状态
 // （用户切到"文档" tab 时 WikiBrowser 会卸载，这里仍需持续反映后台索引进度）。
@@ -129,7 +143,10 @@ const kbViewTabs = computed(() => {
       { key: 'graph', icon: 'relation', label: t(`${w}.tabGraph`), tip: indexing ? wikiIndexingTip.value : t(`${w}.tabGraphTip`), indexing },
     )
   }
-  tabs.push({ key: 'gallery', icon: 'image', label: t(`${w}.tabGallery`), tip: t(`${w}.tabGalleryTip`) })
+  // Cube 二开：独立详情页不展示"画廊"页签
+  if (!isCubePage.value) {
+    tabs.push({ key: 'gallery', icon: 'image', label: t(`${w}.tabGallery`), tip: t(`${w}.tabGalleryTip`) })
+  }
   return tabs
 })
 const shownKbTab = computed<KbTab>(() =>
@@ -2470,31 +2487,34 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
         <div class="document-header-title">
           <div class="document-title-row">
             <h2 class="document-breadcrumb">
-              <button type="button" class="breadcrumb-link" @click="handleNavigateToKbList">
-                {{ $t('menu.knowledgeBase') }}
-              </button>
-              <t-icon name="chevron-right" class="breadcrumb-separator" />
-              <KBSwitcherDropdown v-if="knowledgeList.length" :kb-list="knowledgeList" :current-kb-id="kbId"
-                @select="(id) => handleKnowledgeDropdownSelect({ value: id })">
-                <button type="button" class="breadcrumb-link dropdown" :disabled="!kbId">
+              <!-- Cube 二开：隐藏面包屑（知识库列表/切换入口），仅保留 tab 切换 -->
+              <template v-if="!isCubePage">
+                <button type="button" class="breadcrumb-link" @click="handleNavigateToKbList">
+                  {{ $t('menu.knowledgeBase') }}
+                </button>
+                <t-icon name="chevron-right" class="breadcrumb-separator" />
+                <KBSwitcherDropdown v-if="knowledgeList.length" :kb-list="knowledgeList" :current-kb-id="kbId"
+                  @select="(id) => handleKnowledgeDropdownSelect({ value: id })">
+                  <button type="button" class="breadcrumb-link dropdown" :disabled="!kbId">
+                    <template v-if="!kbInfo">
+                      <t-skeleton animation="gradient" :row-col="[{ width: '120px', height: '20px' }]" />
+                    </template>
+                    <template v-else>
+                      <span>{{ kbInfo.name }}</span>
+                      <t-icon name="chevron-down" />
+                    </template>
+                  </button>
+                </KBSwitcherDropdown>
+                <button v-else type="button" class="breadcrumb-link" :disabled="!kbId" @click="handleNavigateToCurrentKB">
                   <template v-if="!kbInfo">
                     <t-skeleton animation="gradient" :row-col="[{ width: '120px', height: '20px' }]" />
                   </template>
                   <template v-else>
-                    <span>{{ kbInfo.name }}</span>
-                    <t-icon name="chevron-down" />
+                    {{ kbInfo.name }}
                   </template>
                 </button>
-              </KBSwitcherDropdown>
-              <button v-else type="button" class="breadcrumb-link" :disabled="!kbId" @click="handleNavigateToCurrentKB">
-                <template v-if="!kbInfo">
-                  <t-skeleton animation="gradient" :row-col="[{ width: '120px', height: '20px' }]" />
-                </template>
-                <template v-else>
-                  {{ kbInfo.name }}
-                </template>
-              </button>
-              <t-icon name="chevron-right" class="breadcrumb-separator" />
+                <t-icon name="chevron-right" class="breadcrumb-separator" />
+              </template>
               <div class="kb-view-tabs" role="tablist" :aria-label="$t('knowledgeEditor.wikiBrowser.viewTabs')">
                 <t-tooltip v-for="tab in kbViewTabs" :key="tab.key" :content="tab.tip" placement="bottom">
                   <button type="button" role="tab" class="kb-view-tab"
@@ -2507,8 +2527,8 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                 </t-tooltip>
               </div>
             </h2>
-            <!-- 标题行右侧的动作锚点：聚拢"信息"和"设置"两个圆形按钮。 -->
-            <div class="kb-title-actions">
+            <!-- 标题行右侧的动作锚点：聚拢"信息"和"设置"两个圆形按钮。Cube 详情页隐藏。 -->
+            <div class="kb-title-actions" v-if="!isCubePage">
               <KBInfoPopover v-if="kbInfo && !authStore.isLiteMode" :kb-info="kbInfo"
                 :supported-file-types="[...supportedFileTypes]" />
               <t-tooltip v-if="canManage" :content="$t('knowledgeBase.settings')" placement="top">
@@ -2542,8 +2562,8 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
           @view-graph="onViewWikiInGraph" />
       </div>
 
-      <!-- Image Gallery (4th tab) -->
-      <ImageGallery v-if="activeKbTab === 'gallery' && kbId" :knowledge-base-id="kbId" :can-edit="canEdit" @open-source-doc="openSourceDoc" />
+      <!-- Image Gallery (4th tab) — Cube 详情页强制不渲染 -->
+      <ImageGallery v-if="activeKbTab === 'gallery' && kbId && !isCubePage" :knowledge-base-id="kbId" :can-edit="canEdit" @open-source-doc="openSourceDoc" />
 
       <!-- wiki/graph tabs only exist on wiki KBs; a stale tab (?tab= or one
            carried over from a previous KB) falls back to documents. -->
@@ -2847,7 +2867,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
     :kb-id="uiStore.currentKBId || undefined" :initial-type="uiStore.kbEditorType"
     @update:visible="(val) => val ? null : uiStore.closeKBEditor()" @success="handleKBEditorSuccess" />
 
-  <ContextualGuide tour="kbDetail" :when="showKbDetailContextualGuide" />
+  <ContextualGuide tour="kbDetail" :when="showKbDetailContextualGuide && !isCubePage" />
 
   <!-- 批量打标签弹窗 -->
   <BatchTagDialog @tags-changed="onTagCatalogChanged" :visible="batchTagDialogVisible"
