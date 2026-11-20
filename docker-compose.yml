@@ -1,6 +1,8 @@
+
 services:
   frontend:
-    image: wechatopenai/weknora-ui:${WEKNORA_VERSION:-latest}
+#    image: wechatopenai/weknora-ui:${WEKNORA_VERSION:-latest}
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-ui-frontend-1
     # Multi-stage Dockerfile builds dist inside the image (no host npm required).
     # Optional: NPM_REGISTRY=https://registry.npmmirror.com docker compose build frontend
     # VITE_FRONTEND_COMMIT: start_all.sh / make docker-build-frontend inject git;
@@ -304,7 +306,8 @@ services:
       - WEKNORA_REDIS_OP_TIMEOUT_MS=${WEKNORA_REDIS_OP_TIMEOUT_MS:-}
       # 知识图谱唯一开关是 NEO4J_ENABLE（见下方）。ENABLE_GRAPH_RAG 自 v0.1.6 起已被
       # NEO4J_ENABLE 取代，Go 主应用不再读取，此处不再透传。
-      - NEO4J_ENABLE=${NEO4J_ENABLE:-}
+#      - NEO4J_ENABLE=${NEO4J_ENABLE:-}
+      - NEO4J_ENABLE=true
       - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
       - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password}
@@ -368,8 +371,6 @@ services:
       # Built-in MCP ask deadline (Go duration or bare seconds; defaults to 4m).
       - WEKNORA_MCP_ASK_TIMEOUT=${WEKNORA_MCP_ASK_TIMEOUT:-}
       - WEKNORA_AGENT_TOOL_APPROVAL_TIMEOUT=${WEKNORA_AGENT_TOOL_APPROVAL_TIMEOUT:-}
-      # 已保存 MCP 工具目录超过此时长后，下次使用时在后台重新拉取（默认 1h，负数关闭）
-      - WEKNORA_AGENT_MCP_DIRECTORY_MAX_AGE=${WEKNORA_AGENT_MCP_DIRECTORY_MAX_AGE:-}
       # MCP 工具人工审批失败时是否放行（true 放行 / 默认 fail-close 拒绝）
       - WEKNORA_AGENT_TOOL_APPROVAL_FAIL_OPEN=${WEKNORA_AGENT_TOOL_APPROVAL_FAIL_OPEN:-}
       # Tenant / RBAC（详见 website-docs/03-features/01-tenant-auth.md 与 .env.example 注释）
@@ -683,6 +684,9 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY_ID:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_ACCESS_KEY:-minioadmin}
+#      - MINIO_SERVER_URL=http://localhost:9000
+      - MINIO_BROWSER_REDIRECT_URL=https://minio.weigaogroup.com:4433
+
     command: server --console-address ":9001" /data
     volumes:
       - minio_data:/data
