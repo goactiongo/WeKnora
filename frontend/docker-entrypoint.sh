@@ -16,11 +16,19 @@ if [ "$SKILL_MB" -gt 512 ] 2>/dev/null; then
   SKILL_MB=512
 fi
 
+# Cube 二开：/gate 门禁页密码。只把 SHA-256 注入 config.js（原始密码不出容器），
+# 前端用哈希比对。CUBE_JBGSN 为空时门禁关闭（/login 直通）。
+CUBE_GATE_SHA256=""
+if [ -n "${CUBE_JBGSN:-}" ]; then
+  CUBE_GATE_SHA256=$(printf '%s' "$CUBE_JBGSN" | sha256sum | cut -d' ' -f1)
+fi
+
 cat > /usr/share/nginx/html/config.js << EOF
 window.__RUNTIME_CONFIG__ = {
   MAX_FILE_SIZE_MB: ${FILE_MB},
   MAX_SKILL_BUNDLE_SIZE_MB: ${SKILL_MB},
-  DEFAULT_LOCALE: "${RUNTIME_DEFAULT_LOCALE}"
+  DEFAULT_LOCALE: "${RUNTIME_DEFAULT_LOCALE}",
+  CUBE_GATE_SHA256: "${CUBE_GATE_SHA256}"
 };
 EOF
 

@@ -26,6 +26,9 @@ services:
       # For remote deployment, set this to the remote App's service port.
       - APP_PORT=${APP_BACKEND_PORT:-8080}
       - APP_SCHEME=${APP_SCHEME:-http}
+      # Cube 二开：/gate 门禁页密码。entrypoint 只把它的 SHA-256 注入 config.js，
+      # 原始密码不出容器。为空时门禁关闭（/login 直通）。
+      - CUBE_JBGSN=cubeai-gate-2026
     # NOTE: If using a remote App backend, comment out or remove the depends_on
     # block below and set APP_HOST/APP_BACKEND_PORT/APP_SCHEME in your .env file.
     depends_on:

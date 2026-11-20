@@ -50,6 +50,13 @@ const router = createRouter({
       redirect: "/platform/knowledge-bases",
     },
     {
+      // Cube 二开：门禁页。所有 /login 访问先被守卫拦到这里，密码通过才放行。
+      path: "/gate",
+      name: "cubeGate",
+      component: () => import("../views/gate/Gate.vue"),
+      meta: { requiresAuth: false, requiresInit: false }
+    },
+    {
       path: "/login",
       name: "login",
       component: () => import("../views/auth/Login.vue"),
@@ -294,6 +301,27 @@ let liteDeepLinkRestoreDone = false
 // 路由守卫：检查认证状态和系统初始化状态
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  // Cube 二开：/login 门禁。用户要求"所有访问 /login 一律先过 /gate"，
+  // 所以放在 OIDC 回跳处理之前；hash 原样带到 /gate，过门禁后回跳继续消费。
+  // 门禁通过标记存 sessionStorage（按标签页生效，关掉标签页即失效）。
+  const gateHash = (
+    window as unknown as { __RUNTIME_CONFIG__?: { CUBE_GATE_SHA256?: string } }
+  ).__RUNTIME_CONFIG__?.CUBE_GATE_SHA256
+  if (gateHash) {
+    if (to.path === '/gate') {
+      if (sessionStorage.getItem('cubeGateOk') === '1') {
+        next({ path: '/login', query: to.query, hash: to.hash })
+      } else {
+        next()
+      }
+      return
+    }
+    if (to.path === '/login' && sessionStorage.getItem('cubeGateOk') !== '1') {
+      next({ path: '/gate', query: to.query, hash: to.hash })
+      return
+    }
+  }
 
   // OIDC 回跳登录结果依赖 App.vue 在挂载后消费 URL hash。
   // 如果这里先按“未登录”拦截到 /login，会导致回调结果没有机会落盘。
