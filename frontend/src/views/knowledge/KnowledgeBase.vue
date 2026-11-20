@@ -124,11 +124,30 @@ const CUBE_PAGE_TITLE = 'CubeAI';
 // Cube 二开：品牌 logo。放在 public/ 下（构建时原样拷到 dist 根），
 // 用 BASE_URL 拼接以兼容子路径部署；仅 cube 详情页渲染，不影响其他页面。
 const CUBE_LOGO_URL = `${import.meta.env.BASE_URL}cubeai-logo.png`;
+// Cube 二开：页签图标（favicon）同步切换。index.html 的 favicon 全局写死，
+// 这里只在 cube 页把 <link rel=icon> 指向 CubeAI 图标，离开页面即还原。
+// URL 带 query 是为了绕过浏览器对旧 favicon 的缓存。
+const CUBE_FAVICON_URL = `${CUBE_LOGO_URL}?favicon=1`;
+let originalFaviconHref: string | null = null;
+const applyCubeFavicon = (cube: boolean) => {
+  let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
+  if (originalFaviconHref === null) {
+    originalFaviconHref = link.getAttribute('href');
+  }
+  link.setAttribute('href', cube ? CUBE_FAVICON_URL : (originalFaviconHref ?? '/favicon.ico'));
+};
 watch(isCubePage, (cube) => {
   document.title = cube ? CUBE_PAGE_TITLE : BASE_PAGE_TITLE;
+  applyCubeFavicon(cube);
 }, { immediate: true });
 onUnmounted(() => {
   document.title = BASE_PAGE_TITLE;
+  applyCubeFavicon(false);
 });
 
 // Wiki 状态用于面包屑上的索引中指示。父组件自行拉取，避免依赖 WikiBrowser 挂载状态
