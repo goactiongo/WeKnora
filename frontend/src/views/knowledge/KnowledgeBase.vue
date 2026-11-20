@@ -116,6 +116,21 @@ watch(isCubePage, (val) => {
   }
 });
 
+// Cube 二开：浏览器页签标题。index.html 的 <title> 是静态 "WeKnora"，路由层没有按页面改标题，
+// 所以 cube 独立详情页（第三方 SSO 直接打开时唯一的界面）也顶着 WeKnora 品牌。
+// 这里只对该页面改成 CubeAI，其余页面保持原品牌，不引入全局品牌变更。
+const BASE_PAGE_TITLE = 'WeKnora';
+const CUBE_PAGE_TITLE = 'CubeAI';
+// Cube 二开：品牌 logo。放在 public/ 下（构建时原样拷到 dist 根），
+// 用 BASE_URL 拼接以兼容子路径部署；仅 cube 详情页渲染，不影响其他页面。
+const CUBE_LOGO_URL = `${import.meta.env.BASE_URL}cubeai-logo.png`;
+watch(isCubePage, (cube) => {
+  document.title = cube ? CUBE_PAGE_TITLE : BASE_PAGE_TITLE;
+}, { immediate: true });
+onUnmounted(() => {
+  document.title = BASE_PAGE_TITLE;
+});
+
 // Wiki 状态用于面包屑上的索引中指示。父组件自行拉取，避免依赖 WikiBrowser 挂载状态
 // （用户切到"文档" tab 时 WikiBrowser 会卸载，这里仍需持续反映后台索引进度）。
 const wikiStatus = ref<{ pendingTasks: number; isActive: boolean; pendingIssues: number }>({
@@ -2486,6 +2501,8 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
       <div class="document-header">
         <div class="document-header-title">
           <div class="document-title-row">
+            <!-- Cube 二开：独立详情页品牌 logo，替代已被隐藏的面包屑位置 -->
+            <img v-if="isCubePage" :src="CUBE_LOGO_URL" class="cube-brand-logo" alt="CubeAI" />
             <h2 class="document-breadcrumb">
               <!-- Cube 二开：隐藏面包屑（知识库列表/切换入口），仅保留 tab 切换 -->
               <template v-if="!isCubePage">
@@ -3374,6 +3391,16 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+  }
+
+  /* Cube 二开：详情页品牌 logo（仅 cube 页渲染）。源图 32×32 透明底，
+     显示尺寸小于原生尺寸，避免放大发虚 */
+  .cube-brand-logo {
+    height: 26px;
+    width: 26px;
+    flex-shrink: 0;
+    display: block;
+    object-fit: contain;
   }
 
   .kb-title-actions {
