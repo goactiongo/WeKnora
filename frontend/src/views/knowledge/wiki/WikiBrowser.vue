@@ -550,8 +550,8 @@
                         </t-button>
                       </template>
                       <template v-else>
-                        <AssistantActionsButton icon-only :label="$t('assistant.actions.readContent')"
-                          :actions="readingAssistantActions" />
+                        <AssistantActionsButton v-if="!props.hideAssistantActions" icon-only
+                          :label="$t('assistant.actions.readContent')" :actions="readingAssistantActions" />
                         <t-tooltip v-if="props.canEdit" :content="$t('knowledgeEditor.wikiBrowser.editBtn')"
                           placement="top">
                           <button type="button" class="wiki-action-btn"
@@ -896,6 +896,8 @@ const props = defineProps<{
   // 对应后端 g.OwnedWikiKBOrAdmin() 守卫（KB creator OR Admin+ OR
   // org-share editor）。父组件没传时按 false 兜底，避免漏 gate。
   canEdit?: boolean
+  // Cube 独立详情页等场景：隐藏页面工具栏的"智能助理"按钮（✨）。
+  hideAssistantActions?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -20,6 +20,10 @@ import { sanitizeHTML, safeMarkdownToHTML, hydrateProtectedFileImages } from '@/
 import { continueListOnEnter, countContent, indentOnTab } from '@/utils/markdownEditing'
 import { useI18n } from 'vue-i18n'
 import AssistantActionsButton from '@/components/assistant/AssistantActionsButton.vue'
+// Cube 二开：cube 独立详情页隐藏编辑器工具栏的"智能助理"✨ 按钮。
+// 本组件由 App.vue 全局挂载（不在 KnowledgeBase 子树内，inject 收不到），
+// 因此用模块级状态：KnowledgeBase.vue 进入/离开 cube 页时切换 cubePageActive。
+import { cubePageActive } from '@/utils/cubePageState'
 
 interface KnowledgeBaseOption {
   label: string
@@ -1085,7 +1089,7 @@ onBeforeUnmount(() => {
             </template>
           </div>
           <div class="editor-toolbar__view">
-            <AssistantActionsButton :label="$t('manualEditor.assistant.button')"
+            <AssistantActionsButton v-if="!cubePageActive" :label="$t('manualEditor.assistant.button')"
               :title="$t('manualEditor.assistant.tooltip')" :actions="assistantActions" @mousedown.prevent />
             <t-tooltip placement="top-right" :show-arrow="false">
               <template #content>

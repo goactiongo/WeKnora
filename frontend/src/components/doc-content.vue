@@ -30,6 +30,9 @@ import DocumentFileIcon from '@/views/knowledge/components/DocumentFileIcon.vue'
 import KnowledgeProcessingTimeline from '@/components/knowledge-processing-timeline.vue';
 import { resolveKnowledgeDownloadFileName } from '@/views/knowledge/knowledgeDownloadFileName';
 import { isKnownPreviewableExt, resolveFilePreviewExt } from '@/utils/filePreview';
+// Cube 二开：cube 独立详情页隐藏文档详情抽屉里的"智能助理"✨ 按钮。
+// KnowledgeBase.vue 维护该模块状态（进入/离开 cube 页时切换），非 cube 页恒为 false。
+import { cubePageActive } from '@/utils/cubePageState';
 
 const { t } = useI18n();
 const authStore = useAuthStore();
@@ -1619,7 +1622,7 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
                 <t-icon name="chart-line" size="16px" />
               </template>
             </t-button>
-            <AssistantActionsButton v-if="details.id" icon-only
+            <AssistantActionsButton v-if="details.id && !cubePageActive" icon-only
               :label="$t('assistant.askAboutDocument', { name: assistant.displayName || $t('assistant.title') })"
               :actions="readingAssistantActions" />
           </div>

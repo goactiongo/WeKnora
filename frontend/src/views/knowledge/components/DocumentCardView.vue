@@ -59,6 +59,8 @@ const props = defineProps<{
    * the grid spans several folders, i.e. while filtering.
    */
   showFolderPath?: boolean;
+  /** Cube 独立详情页等场景：隐藏卡片菜单里的"移动到目录/移动到其他知识库"。 */
+  hideMoveActions?: boolean;
   // Move sub-flow state
   moveMenuMode: 'normal' | 'targets' | 'confirm';
   moveTargetKbs: any[];
@@ -435,6 +437,7 @@ const handleAction = (action: 'download' | 'edit' | 'view-trace' | 'reparse' | '
                   :can-mutate-knowledge="canMutateKnowledge"
                   :trace-visible="isTraceMenuVisible(item)"
                   :folders-available="Boolean(folderOptions?.length)"
+                  :hide-move-actions="hideMoveActions"
                   @download="handleAction('download', item)"
                   @edit="handleAction('edit', item)"
                   @view-trace="handleAction('view-trace', item)"

@@ -58,6 +58,8 @@ const props = defineProps<{
    * identical on every row.
    */
   showFolderPath?: boolean;
+  /** Cube 独立详情页等场景：隐藏行菜单里的"移动到目录/移动到其他知识库"。 */
+  hideMoveActions?: boolean;
   // Move sub-flow state
   moveMenuMode: 'normal' | 'targets' | 'confirm';
   moveTargetKbs: any[];
@@ -416,6 +418,7 @@ const handleAction = (action: 'download' | 'edit' | 'reparse' | 'cancel-parse' |
                   :can-download="canDownload"
                   :can-mutate-knowledge="canMutateKnowledge"
                   :trace-visible="!!traceVisibleIds[item.id] || (item.parse_status === 'pending' || item.parse_status === 'processing' || item.parse_status === 'finalizing')"
+                  :hide-move-actions="hideMoveActions"
                   @download="handleAction('download', item)"
                   @edit="handleAction('edit', item)"
                   @view-trace="handleAction('view-trace', item)"

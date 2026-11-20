@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAssistantDataChange } from '@/utils/assistantDataChange';
+import { cubePageActive } from '@/utils/cubePageState';
 import { ref, onMounted, onUnmounted, watch, reactive, computed, nextTick } from "vue";
 import { MessagePlugin } from "tdesign-vue-next";
 import DocContent from "@/components/doc-content.vue";
@@ -144,10 +145,14 @@ const applyCubeFavicon = (cube: boolean) => {
 watch(isCubePage, (cube) => {
   document.title = cube ? CUBE_PAGE_TITLE : BASE_PAGE_TITLE;
   applyCubeFavicon(cube);
+  // Cube 二开：同步模块级状态，供全局挂载组件（manual-knowledge-editor 等）
+  // 隐藏"智能助理"✨ 按钮（它们不在本组件子树内，inject 收不到）。
+  cubePageActive.value = cube;
 }, { immediate: true });
 onUnmounted(() => {
   document.title = BASE_PAGE_TITLE;
   applyCubeFavicon(false);
+  cubePageActive.value = false;
 });
 
 // Wiki 状态用于面包屑上的索引中指示。父组件自行拉取，避免依赖 WikiBrowser 挂载状态
@@ -2594,8 +2599,8 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
       <!-- Wiki Browser / Graph (shown when wiki or graph tab is active) -->
       <div v-if="isWiki && (activeKbTab === 'wiki' || activeKbTab === 'graph')" class="wiki-main-area">
         <WikiBrowser v-if="kbId" :knowledge-base-id="kbId" :view="activeKbTab === 'graph' ? 'graph' : 'browser'"
-          :can-edit="canEdit" @open-source-doc="openSourceDoc" @status-change="onWikiStatusChange"
-          @view-graph="onViewWikiInGraph" />
+          :can-edit="canEdit" :hide-assistant-actions="isCubePage" @open-source-doc="openSourceDoc"
+          @status-change="onWikiStatusChange" @view-graph="onViewWikiInGraph" />
       </div>
 
       <!-- Image Gallery (4th tab) — Cube 详情页强制不渲染 -->
@@ -2803,6 +2808,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                     :can-edit="canEdit"
                     :can-download="canDownloadKnowledge"
                     :can-mutate-knowledge="canMutateKnowledge"
+                    :hide-move-actions="isCubePage"
                     :trace-available-by-id="traceAvailableById"
                     :move-menu-mode="moveMenuMode"
                     :move-target-kbs="moveTargetKbs"
@@ -2829,6 +2835,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                     :sub-folders="visibleSubFolders"
                     :selected-ids="selectedIds"
                     :can-edit="canEdit" :can-download="canDownloadKnowledge" :can-mutate-knowledge="canMutateKnowledge"
+                    :hide-move-actions="isCubePage"
                     :trace-visible-ids="traceAvailableById"
                     :move-menu-mode="moveMenuMode"
                     :move-target-kbs="moveTargetKbs"
@@ -2874,7 +2881,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                   @batch-tag="handleBatchTag" @download="handleBatchDownload" @select-loaded="toggleSelectAll(true)"
                   @move-to-folder="(path: string) => moveKnowledgeIntoFolder(Array.from(selectedIds), path)">
                   <template #assistant>
-                    <AssistantActionsButton v-if="selectedIds.size" :label="$t('assistant.actions.processSelected')"
+                    <AssistantActionsButton v-if="selectedIds.size && !isCubePage" :label="$t('assistant.actions.processSelected')"
                       :actions="selectedDocumentAssistantActions"
                       :disabled="batchDeleting || batchReparsing || batchTagging || batchDownloading" />
                   </template>

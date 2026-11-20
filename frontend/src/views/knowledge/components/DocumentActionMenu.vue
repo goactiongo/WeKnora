@@ -16,6 +16,8 @@ const props = defineProps<{
   traceVisible: boolean;
   /** Whether the knowledge base has a folder structure to file documents into. */
   foldersAvailable?: boolean;
+  /** Cube 独立详情页等场景：隐藏"移动到目录/移动到其他知识库"两个菜单项。 */
+  hideMoveActions?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -94,13 +96,13 @@ const fileName = computed(() => props.item.file_name || props.item.title || prop
   </t-popconfirm>
 
   <!-- 移动到目录 -->
-  <div v-if="canMutateKnowledge" class="doc-action-menu-item" @click.stop="emit('move-folder')">
+  <div v-if="canMutateKnowledge && !hideMoveActions" class="doc-action-menu-item" @click.stop="emit('move-folder')">
     <t-icon class="icon" name="folder" />
     <span>{{ $t('knowledgeBase.moveToFolder.action') }}</span>
   </div>
 
   <!-- 移动到其他知识库 -->
-  <div v-if="canMutateKnowledge" class="doc-action-menu-item" @click.stop="emit('move')">
+  <div v-if="canMutateKnowledge && !hideMoveActions" class="doc-action-menu-item" @click.stop="emit('move')">
     <t-icon class="icon" name="swap" />
     <span>{{ $t('knowledgeBase.moveDocument') }}</span>
   </div>
