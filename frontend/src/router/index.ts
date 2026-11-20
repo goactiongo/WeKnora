@@ -302,8 +302,15 @@ let liteDeepLinkRestoreDone = false
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
-  // Cube 二开：/login 门禁。用户要求"所有访问 /login 一律先过 /gate"，
-  // 所以放在 OIDC 回跳处理之前；hash 原样带到 /gate，过门禁后回跳继续消费。
+  // OIDC 回跳登录结果依赖 App.vue 在挂载后消费 URL hash。
+  // 如果这里先按“未登录”拦截到 /login，会导致回调结果没有机会落盘。
+  if (hasPendingOIDCCallback()) {
+    next()
+    return
+  }
+
+  // Cube 二开：/login 门禁。只拦“无 OIDC 回跳参数”的 /login（直接输入地址、
+  // 站内跳转）；第三方 SSO 带 oidc_result/oidc_error 的回跳已在上面放行，不受影响。
   // 门禁通过标记存 sessionStorage（按标签页生效，关掉标签页即失效）。
   const gateHash = (
     window as unknown as { __RUNTIME_CONFIG__?: { CUBE_GATE_SHA256?: string } }
@@ -321,13 +328,6 @@ router.beforeEach(async (to, from, next) => {
       next({ path: '/gate', query: to.query, hash: to.hash })
       return
     }
-  }
-
-  // OIDC 回跳登录结果依赖 App.vue 在挂载后消费 URL hash。
-  // 如果这里先按“未登录”拦截到 /login，会导致回调结果没有机会落盘。
-  if (hasPendingOIDCCallback()) {
-    next()
-    return
   }
 
   // Preserve bookmarks for tools that have moved out of Settings.
