@@ -2,7 +2,7 @@
 services:
   frontend:
 #    image: wechatopenai/weknora-ui:${WEKNORA_VERSION:-latest}
-    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-ui-frontend-1.1
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-ui-frontend-1.2
     # Multi-stage Dockerfile builds dist inside the image (no host npm required).
     # Optional: NPM_REGISTRY=https://registry.npmmirror.com docker compose build frontend
     # VITE_FRONTEND_COMMIT: start_all.sh / make docker-build-frontend inject git;
