@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>单点登录跳转中…</title>
+  <style>
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; color: #333; background: #f5f7fa; }
+    #msg { font-size: 16px; }
+  </style>
+</head>
+<body>
+  <p id="msg">正在登录，请稍候…</p>
+  <script>
+    (async function () {
+      const $msg = document.getElementById('msg');
+      function fail(text) {
+        $msg.textContent = text;
+        setTimeout(function () { location.href = '/login'; }, 1800);
+      }
+      try {
+        // 参数放在 hash（# 之后）：不会随 HTTP 请求发给服务器，比 query 安全
+        var params = new URLSearchParams(location.hash.slice(1));
+        var token = params.get('token');
+        var refresh = params.get('refresh');
+        var kb = params.get('kb');
+        var tab = params.get('tab') || 'graph';
+        if (!token || !kb) { fail('缺少 token 或知识库参数'); return; }
+        localStorage.setItem('weknora_token', token);
+        if (refresh) localStorage.setItem('weknora_refresh_token', refresh);
+        var meRes = await fetch('/api/v1/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+        });
+        var me = await meRes.json();
+        if (!me.success || !me.data || !me.data.user) { fail('登录态无效，请重新登录'); return; }
+        var user = me.data.user;
+        var tenant = me.data.tenant;
+        var memberships = me.data.memberships || [];
+        localStorage.setItem('weknora_user', JSON.stringify(user));
+        if (tenant) {
+          localStorage.setItem('weknora_tenant', JSON.stringify({
+            id: String(tenant.id), name: tenant.name || '',
+            owner_id: tenant.owner_id || user.id || '',
+            description: tenant.description || '', status: tenant.status || 'active',
+            business: tenant.business || '', storage_quota: tenant.storage_quota || 0,
+            storage_used: tenant.storage_used || 0,
+            created_at: tenant.created_at || new Date().toISOString(),
+            updated_at: tenant.updated_at || new Date().toISOString()
+          }));
+        }
+        localStorage.setItem('weknora_memberships', JSON.stringify(memberships));
+        $msg.textContent = '登录成功，正在打开知识库…';
+        history.replaceState(null, '', '/sso.html');
+        if (tab !== 'graph' && tab !== 'wiki') tab = 'graph';
+        location.href = '/platform/cube-knowledge-bases/' + encodeURIComponent(kb) + '?tab=' + tab;
+      } catch (e) {
+        fail('登录失败：' + (e && e.message ? e.message : String(e)));
+      }
+    })();
+  </script>
+</body>
+</html>
