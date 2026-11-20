@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
 
   app:
-    image: wechatopenai/weknora-app:${WEKNORA_VERSION:-latest}
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-app
     build:
       context: .
       dockerfile: docker/Dockerfile.app
@@ -437,7 +437,7 @@ services:
     restart: "no"
 
   docreader:
-    image: wechatopenai/weknora-docreader:${WEKNORA_VERSION:-latest}
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-docreader
     # start_all.sh supplies these when building from source; direct Compose
     # builds can set them explicitly to identify the resulting image.
     build:
@@ -595,7 +595,7 @@ services:
 
   # 修改的PostgreSQL配置
   postgres:
-    image: paradedb/paradedb:v0.25.11-pg17
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-paradedb-v0.25.11-pg17-postgres
     container_name: WeKnora-postgres
     environment:
       - POSTGRES_USER=${DB_USER}
@@ -616,7 +616,7 @@ services:
     stop_grace_period: 1m
 
   redis:
-    image: redis:7.0-alpine
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-redis-7.0-alpine
     container_name: WeKnora-redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     restart: always
@@ -676,7 +676,7 @@ services:
       - full
 
   minio:
-    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-minio-release.2026-08-04t00-00-00z00-00-00z
     container_name: WeKnora-minio
     ports:
       - "${MINIO_PORT:-9000}:9000"
@@ -702,7 +702,7 @@ services:
       - full
 
   neo4j:
-    image: neo4j:2025.10.1
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-neo4j-2025.10.1
     container_name: WeKnora-neo4j
     volumes:
       - neo4j-data:/data
@@ -909,7 +909,7 @@ services:
       - full
 
   langfuse-clickhouse:
-    image: clickhouse/clickhouse-server:24.8
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-langfuse-clickhouse-server-24.8
     container_name: WeKnora-langfuse-clickhouse
     restart: unless-stopped
     user: "101:101"
@@ -933,7 +933,7 @@ services:
       - full
 
   langfuse-minio:
-    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-langfuse-minio-releaqse.2026-08-04t00-00-00z
     container_name: WeKnora-langfuse-minio
     restart: unless-stopped
     entrypoint: sh
@@ -961,7 +961,7 @@ services:
       - full
 
   langfuse-worker:
-    image: langfuse/langfuse-worker:3
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-langfuse-worker-3
     container_name: WeKnora-langfuse-worker
     restart: unless-stopped
     depends_on: &langfuse-depends-on
@@ -1033,7 +1033,7 @@ services:
       - full
 
   langfuse-web:
-    image: langfuse/langfuse:3
+    image: registry.cn-hangzhou.aliyuncs.com/sdytai/wk-langfuse-3
     container_name: WeKnora-langfuse-web
     restart: unless-stopped
     depends_on: *langfuse-depends-on
