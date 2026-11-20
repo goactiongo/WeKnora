@@ -27,7 +27,40 @@
         var refresh = params.get('refresh');
         var kb = params.get('kb');
         var tab = params.get('tab') || 'graph';
+        var tenantId = params.get('tenantId');
         if (!token || !kb) { fail('缺少 token 或知识库参数'); return; }
+
+        function gotoKb() {
+          history.replaceState(null, '', '/sso.html');
+          if (tab !== 'graph' && tab !== 'wiki') tab = 'graph';
+          location.href = '/platform/cube-knowledge-bases/' + encodeURIComponent(kb) + '?tab=' + tab;
+        }
+
+        // ① 复用已有登录态（2026-11-20 优化）：localStorage 里已有 token 且 /auth/me
+        //    校验通过时，直接跳转、不写新 token。好处：多标签、多次点击不同知识库时
+        //    不会互相覆盖 token；任何异常（过期/被撤销/网络错误）都回退到下面的新 token 流程。
+        //    注意：带 tenantId 参数（指定工作空间）时不复用，避免旧 token 的租户不一致。
+        if (!tenantId) {
+          var existing = null;
+          try { existing = localStorage.getItem('weknora_token'); } catch (e) { existing = null; }
+          if (existing) {
+            var reuseOk = false;
+            try {
+              var reuseRes = await fetch('/api/v1/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + existing, 'Content-Type': 'application/json' }
+              });
+              var reuseMe = await reuseRes.json();
+              reuseOk = !!(reuseRes.ok && reuseMe && reuseMe.success && reuseMe.data && reuseMe.data.user);
+            } catch (e) { reuseOk = false; }
+            if (reuseOk) {
+              $msg.textContent = '正在打开知识库…';
+              gotoKb();
+              return;
+            }
+          }
+        }
+
+        // ② 没有可复用登录态：写入新 token 并校验
         localStorage.setItem('weknora_token', token);
         if (refresh) localStorage.setItem('weknora_refresh_token', refresh);
         var meRes = await fetch('/api/v1/auth/me', {
@@ -52,9 +85,7 @@
         }
         localStorage.setItem('weknora_memberships', JSON.stringify(memberships));
         $msg.textContent = '登录成功，正在打开知识库…';
-        history.replaceState(null, '', '/sso.html');
-        if (tab !== 'graph' && tab !== 'wiki') tab = 'graph';
-        location.href = '/platform/cube-knowledge-bases/' + encodeURIComponent(kb) + '?tab=' + tab;
+        gotoKb();
       } catch (e) {
         fail('登录失败：' + (e && e.message ? e.message : String(e)));
       }
