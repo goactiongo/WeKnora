@@ -487,6 +487,13 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       /* ignore */
     }
+    // Cube 二开：注销后重新拉起 /gate 门禁（同标签页内注销→/login 会再次被拦）。
+    // 不影响 SSO：sso.html 跳板直接写 localStorage 注入登录态，不走 logout()。
+    try {
+      sessionStorage.removeItem('cubeGateOk')
+    } catch {
+      /* ignore */
+    }
     reloadUserPreferences()
   }
 
